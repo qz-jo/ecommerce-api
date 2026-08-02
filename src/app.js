@@ -1,0 +1,33 @@
+const express = require("express");
+const cors = require("cors");
+
+const productsRoutes = require("./routes/productsRoutes");
+const categoriesRoutes = require("./routes/categoriesRoutes");
+const usersRoutes = require("./routes/usersRoutes");
+
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+
+// تسجيل المسارات الثلاثة المطلوبة
+app.use("/api/products", productsRoutes);
+app.use("/api/categories", categoriesRoutes);
+app.use("/api/users", usersRoutes);
+
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "E-commerce API is running"
+  });
+});
+
+// معالجة مسارات 404 غير الموجودة
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "API route not found"
+  });
+});
+
+module.exports = app;
