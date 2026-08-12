@@ -7,6 +7,7 @@ function signToken(user) {
     { role: user.role },
     process.env.JWT_SECRET,
     {
+      algorithm: "HS256",
       subject: String(user.id),
       expiresIn: process.env.JWT_EXPIRES_IN || "1h"
     }
@@ -40,7 +41,7 @@ async function register(req, res, next) {
     if (error.code === "23505") {
       return res.status(409).json({ success: false, message: "Email already exists" });
     }
-    next(error);
+    return next(error);
   }
 }
 
@@ -79,7 +80,7 @@ async function login(req, res, next) {
       }
     });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 }
 
@@ -96,7 +97,7 @@ async function me(req, res, next) {
 
     return res.status(200).json({ success: true, data: result.rows[0] });
   } catch (error) {
-    next(error);
+    return next(error);
   }
 }
 
