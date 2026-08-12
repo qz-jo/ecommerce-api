@@ -14,7 +14,9 @@ async function authenticate(req, res, next) {
   }
 
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    const payload = jwt.verify(token, process.env.JWT_SECRET, {
+      algorithms: ["HS256"]
+    });
     const userId = Number(payload.sub);
 
     if (!Number.isInteger(userId) || userId <= 0) {
