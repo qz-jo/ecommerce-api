@@ -19,6 +19,7 @@ This review documents security issues found in the original `main` branch before
 | 11 | No centralized error handler | Controllers and `src/app.js` | Error behavior is duplicated and difficult to control consistently; future errors may leak internal details. | Medium | Add `notFound` and centralized `errorHandler` middleware; never expose SQL, file paths, or stack traces in production responses. |
 | 12 | Text fields have no maximum lengths / XSS-oriented validation | Product/category/user text inputs | Arbitrarily large or HTML/script-like input can be stored and later rendered unsafely by a frontend. | Medium | Enforce reasonable maximum lengths and safe output encoding in the frontend; keep Helmet CSP enabled. |
 | 13 | Security event logging is missing | Authentication/admin operations | Failed login attempts and sensitive administrative actions cannot be reviewed. | Medium | Add minimal structured security logging without passwords, full JWTs, hashes, database URLs, or unnecessary personal data. |
+| 14 | Database TLS verification can be weakened by application config | `src/config/database.js` | The original Pool explicitly supplied `ssl: { rejectUnauthorized: false }`. If that setting is effective for a connection, certificate verification is disabled and the database connection has weaker protection against impersonation. | Medium | Remove the insecure override and use the TLS parameters supplied by the authorized Neon `DATABASE_URL`. |
 
 ## Existing Positive Controls
 
@@ -53,12 +54,34 @@ param("id")
 
 Therefore a value such as `not-a-number` or an injection-like ID is rejected with HTTP `400` before it can be used as a database value.
 
+## Database TLS Review - Before and After
+
+### Original configuration
+
+```js
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
+});
+```
+
+### Hardened configuration
+
+```js
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL
+});
+```
+
+The application no longer disables certificate verification itself. The training environment should use the Neon connection string with its required TLS parameters.
+
 ## Evidence from the original code
 
 - `src/app.js`: unrestricted `cors()` and no Helmet/rate limiting/authentication middleware.
 - `src/routes/productsRoutes.js`: POST/PUT/PATCH/DELETE routes are publicly reachable.
 - `src/routes/usersRoutes.js`: user list, user-by-ID, create-user, and status update routes are publicly reachable.
 - `src/controllers/usersController.js`: accepts `password_hash` from the request body rather than hashing a password server-side.
+- `src/config/database.js`: explicitly supplies `rejectUnauthorized: false`.
 - `package.json`: original dependencies do not include bcrypt, JWT, Helmet, express-rate-limit, or express-validator.
 
 ## Scope
