@@ -1,0 +1,55 @@
+name: Security Task Checks
+
+on:
+  push:
+    branches:
+      - task3-web-security
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies and refresh lock file
+        run: npm install --ignore-scripts
+
+      - name: Check JavaScript syntax
+        run: npm run check
+
+      - name: Validate Postman collection JSON
+        run: node -e "JSON.parse(require('fs').readFileSync('postman/Web_Security_Fundamentals.postman_collection.json','utf8')); console.log('Postman collection JSON is valid')"
+
+      - name: Confirm env file is not tracked
+        run: |
+          if git ls-files --error-unmatch .env >/dev/null 2>&1; then
+            echo '.env must not be tracked'
+            exit 1
+          fi
+          echo '.env is not tracked'
+
+      - name: Commit refreshed package lock
+        if: github.event_name == 'push'
+        run: |
+          if git diff --quiet -- package-lock.json; then
+            echo 'package-lock.json is already current'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add package-lock.json
+          git commit -m 'Refresh package lock for security dependencies'
+          git push

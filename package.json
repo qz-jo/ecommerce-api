@@ -1,20 +1,26 @@
 {
   "name": "ecommerce-api",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Secured REST API training project using Node.js, Express and PostgreSQL",
+  "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js"
+    "dev": "nodemon src/server.js",
+    "check": "node --check src/app.js && node --check src/server.js && node --check src/config/database.js && node --check src/controllers/authController.js && node --check src/controllers/categoriesController.js && node --check src/controllers/ordersController.js && node --check src/controllers/productsController.js && node --check src/controllers/usersController.js && node --check src/middleware/authenticate.js && node --check src/middleware/authorize.js && node --check src/middleware/errorHandler.js && node --check src/middleware/notFound.js && node --check src/middleware/rateLimiter.js && node --check src/middleware/validate.js && node --check src/routes/authRoutes.js && node --check src/routes/categoriesRoutes.js && node --check src/routes/ordersRoutes.js && node --check src/routes/productsRoutes.js && node --check src/routes/usersRoutes.js"
   },
-  "keywords": [],
+  "keywords": ["node", "express", "postgresql", "security", "rest-api"],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "bcryptjs": "^3.0.2",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.2.1",
+    "express-validator": "^7.2.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
     "pg": "^8.22.0"
   },
   "devDependencies": {
