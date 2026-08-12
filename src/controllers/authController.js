@@ -16,8 +16,9 @@ function signToken(user) {
 async function register(req, res, next) {
   try {
     const { full_name, email, phone, password } = req.body;
+    const normalizedEmail = email.toLowerCase();
 
-    const existing = await pool.query("SELECT id FROM users WHERE email = $1", [email.toLowerCase()]);
+    const existing = await pool.query("SELECT id FROM users WHERE email = $1", [normalizedEmail]);
     if (existing.rows.length > 0) {
       return res.status(409).json({ success: false, message: "Email already exists" });
     }
@@ -27,7 +28,7 @@ async function register(req, res, next) {
       `INSERT INTO users (full_name, email, phone, password_hash, role)
        VALUES ($1, $2, $3, $4, 'customer')
        RETURNING id, full_name, email, phone, role, is_active, created_at`,
-      [full_name.trim(), email.toLowerCase(), phone || null, passwordHash]
+      [full_name.trim(), normalizedEmail, phone || null, passwordHash]
     );
 
     return res.status(201).json({
@@ -46,9 +47,10 @@ async function register(req, res, next) {
 async function login(req, res, next) {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = email.toLowerCase();
     const result = await pool.query(
       "SELECT id, full_name, email, role, is_active, password_hash FROM users WHERE email = $1",
-      [email.toLowerCase()]
+      [normalizedEmail]
     );
 
     const user = result.rows[0];
@@ -57,7 +59,9 @@ async function login(req, res, next) {
       : false;
 
     if (!user || !valid || user.is_active === false) {
-      console.warn(`[${new Date().toISOString()}] SECURITY login_failed email=${email.toLowerCase()}`);
+      console.warn(
+        `[${new Date().toISOString()}] SECURITY login_failed ip=${req.ip || "unknown"}`
+      );
       return res.status(401).json({ success: false, message: "Invalid email or password" });
     }
 
