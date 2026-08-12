@@ -5,10 +5,13 @@ function authorize(...allowedRoles) {
     }
 
     if (!allowedRoles.includes(req.user.role)) {
+      console.warn(
+        `[${new Date().toISOString()}] SECURITY authorization_denied actor=${req.user.id} role=${req.user.role} method=${req.method} path=${req.path}`
+      );
       return res.status(403).json({ success: false, message: "Forbidden" });
     }
 
-    next();
+    return next();
   };
 }
 
