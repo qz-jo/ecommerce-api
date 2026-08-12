@@ -18,13 +18,40 @@ This review documents security issues found in the original `main` branch before
 | 10 | Unsafe/weak ID validation on several routes | `usersController.js`, `categoriesController.js`, product update/delete methods | `Number(req.params.id)` can become `NaN` and still reach PostgreSQL in several handlers, causing avoidable database errors instead of a clean 400 response. | Medium | Validate all route IDs as positive integers before controllers execute. |
 | 11 | No centralized error handler | Controllers and `src/app.js` | Error behavior is duplicated and difficult to control consistently; future errors may leak internal details. | Medium | Add `notFound` and centralized `errorHandler` middleware; never expose SQL, file paths, or stack traces in production responses. |
 | 12 | Text fields have no maximum lengths / XSS-oriented validation | Product/category/user text inputs | Arbitrarily large or HTML/script-like input can be stored and later rendered unsafely by a frontend. | Medium | Enforce reasonable maximum lengths and safe output encoding in the frontend; keep Helmet CSP enabled. |
-| 13 | Security event logging is missing | Authentication/admin operations | Failed login attempts and sensitive administrative actions cannot be reviewed. | Medium | Add minimal structured security logging without passwords, full JWTs, hashes, or database URLs. |
+| 13 | Security event logging is missing | Authentication/admin operations | Failed login attempts and sensitive administrative actions cannot be reviewed. | Medium | Add minimal structured security logging without passwords, full JWTs, hashes, database URLs, or unnecessary personal data. |
 
 ## Existing Positive Controls
 
-The original project already uses PostgreSQL parameter placeholders (`$1`, `$2`, etc.) in the reviewed controllers, which is a good baseline against SQL injection. The security task still requires reviewing all queries and documenting a before/after example.
+The original project already uses PostgreSQL parameter placeholders (`$1`, `$2`, etc.) in the reviewed controllers, which is a good baseline against SQL injection. No string-concatenation SQL injection defect was found in the reviewed original controllers, so this review does not invent one that was not present.
 
-The project also already reads `DATABASE_URL` from `process.env`, and `.gitignore` contains `.env`. These controls should be retained and expanded to include all required environment variables.
+The project also already reads `DATABASE_URL` from `process.env`, and `.gitignore` contains `.env`. These controls are retained and expanded to cover the remaining required environment variables.
+
+## SQL Injection Review - Before and After
+
+### Original code reviewed
+
+The original product-by-ID query was already parameterized:
+
+```js
+const result = await pool.query(
+  "SELECT * FROM products WHERE id = $1",
+  [productId]
+);
+```
+
+This prevents the ID value from changing the SQL structure. However, some routes did not consistently validate IDs before database logic.
+
+### Hardened version
+
+The parameterized query remains unchanged in principle, and route validation now rejects invalid IDs first:
+
+```js
+param("id")
+  .isInt({ min: 1 })
+  .withMessage("ID must be a positive integer");
+```
+
+Therefore a value such as `not-a-number` or an injection-like ID is rejected with HTTP `400` before it can be used as a database value.
 
 ## Evidence from the original code
 
