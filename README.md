@@ -18,6 +18,8 @@ git checkout task3-web-security
 npm install
 ```
 
+`package.json` contains the security dependencies added for Task 3. The original `package-lock.json` on `main` predates those dependencies, so the first local `npm install` on this branch should refresh the lock file. Commit the refreshed `package-lock.json` before final submission.
+
 Create a local `.env` file from `.env.example`:
 
 ```bash
@@ -47,7 +49,7 @@ LOGIN_RATE_LIMIT_MAX=5
 NODE_ENV=development
 ```
 
-`JWT_SECRET` must be at least 32 characters.
+`JWT_SECRET` must be at least 32 characters. Use the Neon connection string supplied for the training database, including its TLS/SSL connection parameters. The application does not disable TLS certificate verification in code.
 
 ## Run
 
@@ -143,6 +145,10 @@ Requires a valid Bearer token.
 
 `DATABASE_URL`, `JWT_SECRET`, and deployment settings are read from environment variables. `.env` is ignored by Git and `.env.example` contains no real credentials.
 
+### Database transport
+
+Database connection details come only from `DATABASE_URL`. The application does not set `rejectUnauthorized: false`; TLS requirements should come from the Neon connection string used in the authorized training environment.
+
 ### Input validation
 
 `express-validator` validates important IDs, names, emails, passwords, product prices, stock quantities, roles, and text lengths. Invalid input is rejected before controller/database logic.
@@ -170,7 +176,7 @@ User-controlled values are passed separately to PostgreSQL using `$1`, `$2`, etc
 await pool.query("SELECT * FROM products WHERE id = $1", [productId]);
 ```
 
-IDs are also validated before controller logic.
+The initial review found that the original controllers already used parameterized values, so no SQL-injection defect was invented for the report. Task 3 keeps parameterization and adds positive-integer validation before ID-based queries.
 
 ### Passwords
 
@@ -178,13 +184,15 @@ Passwords are hashed with bcrypt using 12 rounds. Login uses `bcrypt.compare`. A
 
 ### JWT
 
-JWT tokens include only the user subject ID and role. Tokens have a configurable expiry and are verified by authentication middleware.
+JWT tokens use HS256, include the subject user ID and role, and have a configurable expiry. Verification restricts accepted algorithms to HS256. Protected requests also reload the user's current `role` and `is_active` state from PostgreSQL, so a deactivated account or changed role is enforced without trusting a stale role claim alone.
 
 ### IDOR protection
 
-`GET /api/users/:id` allows the owner or an admin. Order routes verify the authenticated user's ownership before returning an order. Unauthorized order access returns `404` to avoid confirming that another user's order exists.
+`GET /api/users/:id` allows the owner or an admin. Order routes enforce ownership in the PostgreSQL query itself for customers; unauthorized order access returns `404` to avoid confirming whether another user's order exists.
 
-The original project did not contain an order controller, and the training PDF does not provide the exact ownership column name. The order controller therefore recognizes the common ownership fields `user_id`, `owner_id`, `id_owner`, or `customer_id` when checking returned order rows. Confirm the actual Neon schema during local testing and keep only the real ownership field if desired.
+The original repository did not contain an order controller, and the task PDF does not provide the exact ownership column name. The training implementation safely supports these common ownership fields through a static SQL expression: `user_id`, `owner_id`, `id_owner`, or `customer_id`. Confirm the actual Neon `orders` schema during local testing and simplify the expression to the real column if desired.
+
+The original repository also contains no `addresses` route/controller. Therefore there is no existing address endpoint to secure; if an address resource is later added, it must apply the same `owner_id` versus authenticated-user check.
 
 ### Helmet
 
@@ -215,7 +223,7 @@ Do not weaken production limits only to make a screenshot easier.
 
 ### Safe errors
 
-Unknown endpoints use centralized `notFound` handling. Internal server errors return a generic message without SQL, file paths, or stack traces. Full error objects are logged only outside production.
+Unknown endpoints use centralized `notFound` handling. Internal server errors return a generic message without SQL, file paths, or stack traces. Detailed error objects are logged only outside production. Invalid JSON and oversized request bodies receive controlled responses rather than raw parser details.
 
 ### XSS risk reduction
 
@@ -233,6 +241,12 @@ Import:
 postman/Web_Security_Fundamentals.postman_collection.json
 ```
 
+Also read:
+
+```text
+postman/TESTING_SETUP.md
+```
+
 Set the collection variables before testing:
 
 - `baseUrl` — default `http://localhost:3000`
@@ -240,6 +254,7 @@ Set the collection variables before testing:
 - `customerPassword`
 - `adminEmail`
 - `adminPassword`
+- `categoryId`
 - `otherUserId`
 - `otherOrderId`
 
@@ -276,7 +291,7 @@ Also test:
 
 ## Recommended screenshots
 
-Save screenshots under a local `screenshots/` folder before submission. Do not include `.env`, database connection strings, passwords, or full JWT values in screenshots.
+Save real evidence under `screenshots/` before submission. Follow `screenshots/README.md`. Do not include `.env`, database connection strings, passwords, JWT secrets, or full JWT values in screenshots.
 
 Suggested evidence:
 
@@ -299,8 +314,11 @@ Suggested evidence:
 ## Before submitting
 
 - Confirm `.env` is not tracked by Git.
+- Run `npm install` and commit the refreshed `package-lock.json`.
+- Confirm the actual `orders` ownership field in Neon.
 - Search the repository for real secrets before making the final submission.
 - Run all mandatory Postman tests against the local/authorized training environment.
 - Export the Postman collection as JSON.
 - Add the required screenshots.
 - Replace report placeholders with the actual before/after evidence from your tests.
+- Merge `task3-web-security` into `main` only after the local tests pass.
