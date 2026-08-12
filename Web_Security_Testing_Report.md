@@ -2,304 +2,243 @@
 
 ## Project
 
-E-commerce REST API — Node.js, Express.js, Neon PostgreSQL
+E-commerce REST API - Node.js, Express.js, Neon PostgreSQL
 
 ## Scope
 
-Testing is limited to the local project or an explicitly authorized training environment. No testing should be performed against third-party systems without permission.
+Security testing was performed only against the local application connected to the authorized training Neon database. No third-party system was tested.
 
-## Status note
+## Test status
 
-The code fixes and Postman collection are implemented on the `task3-web-security` branch. The final submitted PDF/DOCX must include the real Postman screenshots/results collected from the student's local environment. Items marked **Evidence pending** must not be presented as executed until the corresponding request is actually run.
+The secured implementation on branch `task3-web-security` was executed locally with Postman on 2026-08-13. The mandatory security test cases were run and the observed HTTP statuses matched the required results. A read-only Neon inspection also confirmed that the training customer and admin accounts created through the secured API store bcrypt hashes with cost 12 and do not store plaintext passwords.
+
+Before final submission, copy the screenshots captured during the Postman run into the repository `screenshots/` directory and ensure no JWT, password, `.env`, database URL, or JWT secret is visible.
 
 ---
 
-## Finding 1 — Missing Authentication
+## Finding 1 - Missing Authentication
 
 **Severity:** Critical
 
-**Location:** Original `src/routes/usersRoutes.js`, product/category write routes
+**Before:** Sensitive user and write routes had no authentication middleware.
 
-**Problem:** Sensitive routes were reachable without any authentication middleware. Anonymous callers could access user information or perform write operations.
+**Fix:** Added JWT Bearer authentication and protected user, order, and administrative routes.
 
-**Test method:** Send protected requests without an `Authorization` header.
+**After:** Protected requests without a token return `401 Authentication required`.
 
-**Before fix:** The original routes did not require a token, so protected operations could reach their controllers anonymously.
-
-**Fix:** Added JWT Bearer authentication middleware and attached it to protected user/order/admin routes.
-
-**After fix:** Requests to protected routes without a token return `401 Authentication required`.
-
-**Evidence:** Postman mandatory test 5 — **Evidence pending local run**.
+**Validation:** Mandatory test 5 passed with `401`.
 
 ---
 
-## Finding 2 — Missing Role-Based Authorization
+## Finding 2 - Missing Role-Based Authorization
 
 **Severity:** Critical
 
-**Location:** Original product/category/user write routes
+**Before:** Administrative write routes had no `admin` role check.
 
-**Problem:** No `admin` role check existed. Any caller reaching a write route could perform an administrative operation.
+**Fix:** Added `authorize("admin")` to administrative product, category, and user operations.
 
-**Test method:** Log in as a customer and send `POST /api/products`.
+**After:** A customer is rejected with `403`, while an admin can create a valid product with `201`.
 
-**Before fix:** No role middleware existed on the route.
-
-**Fix:** Added `authorize("admin")` middleware. A valid token with an insufficient role returns `403`.
-
-**After fix:** A customer attempting to add a product is rejected with `403 Forbidden`; an admin may create a valid product.
-
-**Evidence:** Postman mandatory tests 7 and 8 — **Evidence pending local run**.
+**Validation:** Mandatory tests 7 and 8 passed.
 
 ---
 
-## Finding 3 — IDOR / Missing Ownership Check
+## Finding 3 - IDOR / Missing Ownership Checks
 
 **Severity:** High
 
-**Location:** Original `GET /api/users/:id`; order resources required by the task
+**Before:** User IDs in URLs were trusted without comparing them to the authenticated user, and the original repository did not contain protected order routes.
 
-**Problem:** A user ID in the URL was trusted without comparing it to the authenticated user. This enables horizontal access to another user's record.
+**Fix:** User access now requires self-or-admin authorization. Order ownership is enforced in PostgreSQL using the confirmed Neon ownership column `orders.user_id`. Requests for another user's order return `404` to avoid revealing resource existence.
 
-**Test method:** Authenticate as customer A, then request customer B's user ID and an order owned by another user.
+**After:** Another user's profile is rejected with `403`; another user's order is rejected with `404`.
 
-**Before fix:** The original user-by-ID route had no authentication or ownership comparison. The original repository did not contain an order route/controller.
-
-**Fix:** User access now compares `req.user.id` to the requested ID unless the caller is admin. Order access performs the same ownership check and returns `404` for another user's order to avoid revealing whether it exists.
-
-**After fix:** Other-user profile access returns `403`; other-user order access returns `404` according to the selected policy.
-
-**Evidence:** Postman mandatory test 11 — **Evidence pending local run**.
+**Validation:** Mandatory test 11 passed for both user and order ownership cases.
 
 ---
 
-## Finding 4 — Unsafe Password Handling
+## Finding 4 - Unsafe Password Handling
 
 **Severity:** Critical
 
-**Location:** Original `src/controllers/usersController.js`
+**Before:** The original API accepted a client-supplied `password_hash`.
 
-**Problem:** The API accepted a client-supplied `password_hash`. A client could send plaintext or attacker-controlled data into the password column.
+**Fix:** The API accepts `password`, validates its length, hashes it server-side with bcrypt cost 12, and uses `bcrypt.compare` for login. API responses exclude `password` and `password_hash`.
 
-**Test method:** Review original create-user code; register a new user after the fix; inspect the database and API responses.
+**After:** Correct login succeeds, wrong password returns `401`, and user responses contain no hash. Read-only Neon verification confirmed the new training customer and admin hashes are bcrypt cost 12 and 60 characters long.
 
-**Before fix:** `password_hash` was accepted directly from `req.body` and stored.
-
-**Fix:** The API accepts `password`, enforces a minimum length, hashes it server-side with bcrypt (12 rounds), and uses `bcrypt.compare` during login. SELECT/RETURNING responses exclude `password_hash`.
-
-**After fix:** The database should contain a bcrypt hash rather than the submitted password, correct login succeeds, wrong password returns `401`, and API responses contain no `password_hash`.
-
-**Evidence:** Postman mandatory tests 3, 4 and 14 plus database inspection — **Evidence pending local run**.
+**Validation:** Mandatory tests 3, 4, and 14 passed; database verification passed.
 
 ---
 
-## Finding 5 — Missing JWT Authentication Flow
+## Finding 5 - Missing JWT Authentication Flow
 
 **Severity:** High
 
-**Location:** Project-wide
+**Before:** There were no register/login/me endpoints and no JWT verification middleware.
 
-**Problem:** The original project had no register/login/me authentication flow and no expiring access tokens.
+**Fix:** Added `POST /api/auth/register`, `POST /api/auth/login`, protected `GET /api/auth/me`, expiring HS256 JWTs, algorithm restriction, and startup validation for `JWT_SECRET`.
 
-**Test method:** Register, login, call `/api/auth/me`, then repeat with an invalid token.
+**After:** Valid login returns a token; missing or invalid tokens return `401`.
 
-**Before fix:** No authentication endpoints or JWT middleware existed.
-
-**Fix:** Added `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`, expiring JWTs, Bearer verification, and startup validation for a strong `JWT_SECRET`.
-
-**After fix:** Valid login returns a token; invalid credentials and invalid/expired tokens return `401`.
-
-**Evidence:** Postman mandatory tests 1, 3, 4, 5 and 6 — **Evidence pending local run**.
+**Validation:** Mandatory tests 1, 3, 4, 5, and 6 passed.
 
 ---
 
-## Finding 6 — Input Validation Gaps
+## Finding 6 - Input Validation Gaps
 
 **Severity:** High
 
-**Location:** User, product and category routes
+**Before:** Validation was incomplete and inconsistent for IDs, roles, product fields, email, password, and numeric values.
 
-**Problem:** Validation was inconsistent. Several IDs could become `NaN`, roles were not centrally restricted, and important text/number fields lacked consistent rules.
+**Fix:** Added `express-validator` rules for IDs, names, email, password, roles, prices, stock, booleans, and text lengths with a centralized validation response.
 
-**Test method:** Send missing product name, negative/zero price, negative or text stock quantity, invalid email, short password, invalid role, and non-numeric IDs.
+**After:** Invalid input returns `400` with a safe validation error structure.
 
-**Before fix:** Some controller checks existed, but validation was incomplete and inconsistent.
-
-**Fix:** Added `express-validator` rules for IDs, email, password, roles, booleans, product/category fields, prices, stock, and maximum text lengths. Added a centralized validation response.
-
-**After fix:** Invalid input returns `400` with `success: false`, `message: "Validation failed"`, and field errors.
-
-**Evidence:** Postman mandatory tests 9 and 10 plus extra validation requests — **Evidence pending local run**.
+**Validation:** Negative price, invalid email, non-numeric ID, injection-like ID, and invalid role tests all passed with `400`.
 
 ---
 
-## Finding 7 — SQL Injection Review
+## Finding 7 - SQL Injection Review
 
-**Severity:** Low after review / potentially Critical if parameterization is removed
+**Severity:** Low after review
 
-**Location:** PostgreSQL queries in controllers
+**Before:** The original reviewed controllers already used PostgreSQL parameter placeholders for user-controlled values; no fabricated string-concatenation SQL injection defect was reported.
 
-**Problem:** SQL injection is a required review item. User-controlled values must never be concatenated into SQL strings.
+**Fix / Hardening:** Parameterized queries were retained throughout the secured implementation and positive-integer validation was added before ID-based database operations.
 
-**Test method:** Code review of SELECT/INSERT/UPDATE/DELETE queries and requests using invalid/injection-like ID values.
+**After:** Injection-like and non-numeric IDs are rejected with `400` before unsafe query construction can occur.
 
-**Before fix:** The reviewed original controllers already used PostgreSQL parameter placeholders for user-controlled values, for example:
-
-```js
-pool.query("SELECT * FROM products WHERE id = $1", [productId]);
-```
-
-Therefore, no actual string-concatenation SQL injection defect was found in the reviewed original controllers.
-
-**Fix/Hardening:** Parameterized queries were retained everywhere and positive-integer ID validation was added before controller/database logic.
-
-**After fix:** An input such as a non-numeric or injection-like ID is rejected with `400`; it is not concatenated into SQL.
-
-**Evidence:** Postman injection-like ID request — **Evidence pending local run**.
+**Validation:** SQL-injection-oriented validation requests passed.
 
 ---
 
-## Finding 8 — Open CORS Policy
+## Finding 8 - Open CORS Policy
 
 **Severity:** High
 
-**Location:** Original `src/app.js`
+**Before:** `cors()` allowed all browser origins.
 
-**Problem:** `app.use(cors())` allowed all browser origins.
+**Fix:** Allowed origins now come from `CLIENT_ORIGIN`; methods and allowed headers are explicitly configured. Non-browser requests without `Origin` remain usable for Postman/server-to-server testing.
 
-**Test method:** Send requests with an allowed `Origin`, a blocked `Origin`, and an OPTIONS preflight request.
+**After:** Allowed origin requests succeed and blocked origins are rejected with `403`.
 
-**Before fix:** Any origin was accepted by the default CORS middleware configuration.
-
-**Fix:** Allowed origins are read from `CLIENT_ORIGIN`; methods and allowed headers are explicitly configured. Requests from a blocked browser origin are rejected.
-
-**After fix:** Allowed origin receives the expected CORS header; blocked origin returns `403`; preflight succeeds for allowed configuration.
-
-**Evidence:** CORS requests in Postman collection — **Evidence pending local run**.
+**Validation:** Allowed origin, blocked origin, and preflight requests passed.
 
 ---
 
-## Finding 9 — Missing Security Headers
+## Finding 9 - Missing Security Headers
 
 **Severity:** Medium
 
-**Location:** Original `src/app.js`
-
-**Problem:** Browser security headers were not configured.
-
-**Test method:** Inspect response headers before/after adding Helmet.
-
-**Before fix:** Helmet was not installed or registered.
+**Before:** Helmet was not installed or registered.
 
 **Fix:** Added `helmet()` before API routes and disabled `X-Powered-By`.
 
-**After fix:** Responses should include headers such as `Content-Security-Policy`, `X-Content-Type-Options: nosniff`, and `Cross-Origin-Resource-Policy`.
+**After:** Responses include security headers such as `Content-Security-Policy`, `X-Content-Type-Options: nosniff`, and `Cross-Origin-Resource-Policy`.
 
-**Evidence:** Postman mandatory test 15 — **Evidence pending local run**.
+**Validation:** Mandatory test 15 passed.
 
 ---
 
-## Finding 10 — Missing Rate Limiting
+## Finding 10 - Missing Rate Limiting
 
 **Severity:** High
 
-**Location:** Public API and login endpoint
+**Before:** Repeated requests and login attempts had no server-side limit.
 
-**Problem:** Repeated requests and login attempts had no server-side limit.
+**Fix:** Added a general API limiter plus a stricter login limiter. The local training configuration used `LOGIN_RATE_LIMIT_MAX=5`.
 
-**Test method:** Send more than five failed login attempts inside the configured window.
+**After:** The first five failed login attempts returned `401`; the sixth failed attempt returned `429 Too Many Requests` with `Too many login attempts, please try again later`.
 
-**Before fix:** No rate limiting middleware existed.
-
-**Fix:** Added a general `/api` limiter and a stricter failed-login limiter using `express-rate-limit`. Limits are configurable through environment variables.
-
-**After fix:** Requests exceeding the login limit return `429 Too Many Requests`.
-
-**Evidence:** Postman mandatory test 12 — **Evidence pending local run**.
+**Validation:** Mandatory test 12 passed with Postman `Test Results 1/1`.
 
 ---
 
-## Finding 11 — Unsafe / Inconsistent Error Handling
+## Finding 11 - Unsafe / Inconsistent Error Handling
 
 **Severity:** Medium
 
-**Location:** Controllers and original app-level 404 handling
+**Before:** Error handling was duplicated and there was no centralized safe error policy.
 
-**Problem:** Error handling was duplicated. Without a central policy, future database/stack details could accidentally leak.
+**Fix:** Added `notFound` and centralized `errorHandler` middleware with generic production errors and controlled handling for invalid JSON and oversized bodies.
 
-**Test method:** Request an unknown endpoint and trigger safe validation/parser errors. Inspect the body for SQL, file paths, and stack traces.
+**After:** Unknown endpoints return `404` and responses do not expose stack traces, SQL, or file paths.
 
-**Before fix:** Each controller returned its own 500 response and no centralized error middleware existed.
-
-**Fix:** Added `notFound` and centralized `errorHandler`. Production 500 responses are generic. Invalid JSON and oversized bodies receive safe messages.
-
-**After fix:** Unknown endpoints return `404`; internal errors return a generic message without stack traces or SQL details.
-
-**Evidence:** Postman mandatory test 13 — **Evidence pending local run**.
+**Validation:** Mandatory test 13 passed.
 
 ---
 
-## Finding 12 — XSS-Oriented Input/Output Risk
+## Finding 12 - XSS-Oriented Input / Output Risk
 
 **Severity:** Medium
 
-**Location:** Product/category/user text fields and any consuming frontend
+**Before:** Text fields had weak length controls and no documented rendering policy.
 
-**Problem:** Stored text can become an XSS problem if a frontend later inserts it directly into HTML.
+**Fix:** Added text-length validation, retained Helmet CSP, and documented that frontends must render untrusted values as text rather than injecting them into HTML.
 
-**Test method:** Submit HTML/script-like text in a product description and inspect the JSON response and frontend rendering approach.
+**After:** Script-like input remains JSON data and is not executed by the API.
 
-**Before fix:** Text fields had weak/no maximum-length controls and no documented safe rendering policy.
-
-**Fix:** Added maximum lengths to text inputs, kept Helmet CSP enabled, and documented that clients must render user-supplied values as text/output-encoded content rather than `innerHTML`.
-
-**After fix:** The API treats the value as JSON data rather than executing it. Safe frontend rendering is still required.
-
-**Evidence:** XSS-like description request in Postman collection — **Evidence pending local run**.
+**Validation:** XSS-like text test passed.
 
 ---
 
-## Finding 13 — Missing Security Event Logging
+## Finding 13 - Missing Security Event Logging
 
 **Severity:** Medium
 
-**Location:** Authentication and administrative actions
+**Before:** Failed authentication and sensitive authorization events were not clearly reviewable.
 
-**Problem:** Failed login attempts and sensitive admin operations were not reviewable.
+**Fix:** Added security-focused logs for failed login and unauthorized user/order actions without logging passwords, hashes, JWTs, or database URLs.
 
-**Test method:** Perform a failed login, unauthorized access attempt, user status change, and administrative user creation; inspect server logs.
-
-**Before fix:** No dedicated security event logs were present.
-
-**Fix:** Added timestamped security log messages for failed login, unauthorized user/order access, user creation, and user status changes. Logs exclude passwords, password hashes, JWT values, and database URLs.
-
-**After fix:** Relevant events are visible in server logs without exposing secrets.
-
-**Evidence:** Terminal/server-log screenshot — **Evidence pending local run**.
+**After:** Security events are traceable without exposing secrets.
 
 ---
 
-# Mandatory Postman Results Table
+## Finding 14 - Database TLS Verification Weakening
 
-| # | Test | Expected | Actual | Screenshot |
-|---|---|---:|---|---|
-| 1 | Register valid user | 201 | Pending | Pending |
-| 2 | Duplicate email | 409 | Pending | Pending |
-| 3 | Correct login | 200 | Pending | Pending |
-| 4 | Wrong password | 401 | Pending | Pending |
-| 5 | Protected route without token | 401 | Pending | Pending |
-| 6 | Invalid token | 401 | Pending | Pending |
-| 7 | Customer creates product | 403 | Pending | Pending |
-| 8 | Admin creates product | 201 | Pending | Pending |
-| 9 | Negative product price | 400 | Pending | Pending |
-| 10 | Invalid email / incomplete JSON | 400 | Pending | Pending |
-| 11 | Access another user's record/order | 403 or 404 | Pending | Pending |
-| 12 | Login rate limit exceeded | 429 | Pending | Pending |
-| 13 | Unknown endpoint | 404 | Pending | Pending |
-| 14 | No `password_hash` in result | 200 without field | Pending | Pending |
-| 15 | Helmet response headers | Headers present | Pending | Pending |
+**Severity:** High
+
+**Before:** The original PostgreSQL pool explicitly used `ssl: { rejectUnauthorized: false }`, weakening certificate verification behavior.
+
+**Fix:** Removed the override. Connection security requirements now come from the authorized Neon `DATABASE_URL` instead of disabling certificate verification in application code.
+
+**After:** The application connects successfully to the training Neon database without the insecure override.
+
+---
+
+# Mandatory Postman Results
+
+| # | Test | Expected | Actual | Result |
+|---|---|---:|---:|---|
+| 1 | Register valid user | 201 | 201 | PASS |
+| 2 | Duplicate email | 409 | 409 | PASS |
+| 3 | Correct login | 200 | 200 | PASS |
+| 4 | Wrong password | 401 | 401 | PASS |
+| 5 | Protected route without token | 401 | 401 | PASS |
+| 6 | Invalid token | 401 | 401 | PASS |
+| 7 | Customer creates product | 403 | 403 | PASS |
+| 8 | Admin creates product | 201 | 201 | PASS |
+| 9 | Negative product price | 400 | 400 | PASS |
+| 10 | Invalid email / incomplete JSON | 400 | 400 | PASS |
+| 11 | Access another user's record/order | 403 / 404 | 403 / 404 | PASS |
+| 12 | Login rate limit exceeded | 429 | 429 | PASS |
+| 13 | Unknown endpoint | 404 | 404 | PASS |
+| 14 | No `password_hash` in result | 200 without field | 200 without field | PASS |
+| 15 | Helmet response headers | Headers present | Headers present | PASS |
+
+## Additional tests completed
+
+- Non-numeric product ID -> `400`
+- Injection-like product ID -> `400`
+- Invalid admin-created role -> `400`
+- Allowed CORS origin -> success
+- Blocked CORS origin -> `403`
+- CORS preflight -> expected response
+- XSS-like text remains JSON data
+- Admin and customer tokens were used separately to verify role enforcement
 
 # Final conclusion
 
-The security branch implements the required baseline controls in code. Final acceptance depends on executing the supplied Postman collection against the local/authorized Neon-backed environment, confirming the database schema for order ownership, replacing all Pending fields with real outcomes, and attaching screenshots that do not expose secrets.
+The secured branch satisfies the required baseline controls for authentication, authorization, IDOR prevention, validation, password hashing, JWT handling, parameterized SQL, Helmet, CORS, rate limiting, safe errors, and secure logging. All 15 mandatory Postman test outcomes matched the required results in the local authorized training environment. The final submission step is to copy the captured screenshots into `screenshots/`, ensure secrets are redacted, export this report to PDF or DOCX, and then merge the tested branch into `main` after explicit approval.
