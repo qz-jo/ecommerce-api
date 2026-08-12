@@ -6,6 +6,7 @@ const authRoutes = require("./routes/authRoutes");
 const productsRoutes = require("./routes/productsRoutes");
 const categoriesRoutes = require("./routes/categoriesRoutes");
 const usersRoutes = require("./routes/usersRoutes");
+const ordersRoutes = require("./routes/ordersRoutes");
 const { apiLimiter } = require("./middleware/rateLimiter");
 const notFound = require("./middleware/notFound");
 const errorHandler = require("./middleware/errorHandler");
@@ -25,7 +26,8 @@ app.use(cors({
     if (!origin || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
-    const error = new Error("Origin not allowed by CORS");
+
+    const error = new Error("CORS origin rejected");
     error.status = 403;
     error.publicMessage = "Origin not allowed";
     return callback(error);
@@ -41,6 +43,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/products", productsRoutes);
 app.use("/api/categories", categoriesRoutes);
 app.use("/api/users", usersRoutes);
+app.use("/api/orders", ordersRoutes);
 
 app.get("/", (req, res) => {
   res.status(200).json({
