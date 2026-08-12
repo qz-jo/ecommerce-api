@@ -10,7 +10,7 @@ From the project directory:
 npm install
 ```
 
-This also refreshes `package-lock.json` locally so it matches the security dependencies in `package.json`. Commit the refreshed lock file before the final submission.
+`package-lock.json` has already been refreshed on the security branch and should remain committed.
 
 ## 2. Configure `.env`
 
@@ -57,9 +57,9 @@ If the email was already used from an earlier run, change the `customerEmail` co
 
 ## 5. Prepare an admin account
 
-If the database already contains an admin account, set `adminEmail` and `adminPassword` in the Postman collection variables and run `Admin login - save token`.
+The connected Neon training project contains an existing admin row, but the current database passwords predate the new bcrypt authentication flow and were not verified as bcrypt hashes. For clean evidence, the safest option is to register a new training user through the secured API, then promote only that training account to `admin` in the authorized Neon SQL editor.
 
-If no admin account exists, create a normal training user first through `/api/auth/register`, then promote that specific training account through the authorized Neon SQL editor. Example:
+Example:
 
 ```sql
 UPDATE users
@@ -73,7 +73,7 @@ Then set `adminEmail` and `adminPassword` only inside your local Postman variabl
 
 ## 6. Set a real category ID
 
-The product creation tests use the `categoryId` variable. Set it to an existing category ID from your local Neon data.
+The product creation tests use the `categoryId` variable. Set it to an existing category ID from the local Neon data.
 
 You can check:
 
@@ -92,16 +92,29 @@ The expected policy is:
 - another user's profile: `403`
 - another user's order: `404` to avoid revealing whether that order exists
 
-## 8. Confirm the order ownership column
+## 8. Confirmed order ownership schema
 
-The task instructions require ownership checks for orders but do not provide the exact `orders` schema. The implementation supports these common ownership keys inside PostgreSQL:
+The connected Neon training project was inspected directly. The `orders` table uses:
 
-- `user_id`
-- `owner_id`
-- `id_owner`
-- `customer_id`
+```text
+user_id
+```
 
-Check the real Neon table before final submission. If your table uses a different ownership column, update `ORDER_OWNER_SQL` in `src/controllers/ordersController.js` to match the actual schema, then retest.
+as the ownership column. The secured order controller now uses parameterized queries such as:
+
+```text
+WHERE user_id = $1
+```
+
+and:
+
+```text
+WHERE id = $1 AND user_id = $2
+```
+
+for customer access control. No schema migration is required for this ownership check.
+
+The current training database contains the main tables required for this task: `users`, `categories`, `products`, and `orders`. No `addresses` table was found in the inspected public schema, so there is no existing address endpoint to test for IDOR.
 
 ## 9. Run the mandatory tests
 
