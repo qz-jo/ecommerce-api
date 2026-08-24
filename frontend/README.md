@@ -4,9 +4,9 @@ A responsive React + Vite e-commerce frontend created for BATTECHNO Task 4. This
 
 ## Preview
 
-GitHub Pages preview:
+Live GitHub Pages preview (served through the account custom domain):
 
-`https://qz-jo.github.io/ecommerce-api/`
+`https://saif.codes/ecommerce-api/`
 
 ## Tech Stack
 
@@ -126,7 +126,7 @@ The interface is built for the required target sizes:
 - Tablet: 768px
 - Mobile: 390px
 
-It uses responsive grids, a mobile navigation menu, a mobile product-filter drawer and horizontally scrollable admin tables only inside their dedicated table wrapper.
+Validation at all three target widths confirmed no page-level horizontal overflow. The interface uses responsive grids, a mobile navigation menu, a mobile product-filter drawer and horizontally scrollable admin tables only inside their dedicated table wrapper.
 
 ## Accessibility
 
@@ -138,6 +138,16 @@ It uses responsive grids, a mobile navigation menu, a mobile product-filter draw
 - Buttons for actions and links for navigation
 - Escape-key modal close support
 - `aria-live` messages for validation and status feedback
+
+## Verification
+
+- `npm run build` passes in GitHub Actions.
+- GitHub Pages build and deployment both pass.
+- Search, category/price filtering, sorting, pagination, cart add/update, remove confirmation, customer login/profile and admin login/dashboard were exercised against the production bundle.
+- Desktop 1440px, Tablet 768px and Mobile 390px submission screenshots were captured.
+- A short submission video was captured showing navigation, search, filtering, sorting and cart interaction.
+
+See `TASK_TEST_RESULTS.md` for the detailed checklist.
 
 ## GitHub Pages Route Refresh
 
