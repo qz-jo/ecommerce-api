@@ -19,7 +19,7 @@ This file tracks the Task 4 acceptance checks. The production bundle was built i
 | 13 | `npm run build` | Vite production build completes without blocking errors | **Passed** — GitHub Actions CI and Pages build completed successfully |
 | 14 | 1440px / 768px / 390px layouts | Responsive layout adapts without page-level horizontal scrolling | **Passed** — scroll width exactly matched 1440, 768 and 390; screenshots captured |
 | 15 | GitHub Pages deployment | Production build deploys successfully | **Passed** — build and `Deploy to GitHub Pages` jobs both completed successfully |
-| 16 | Refresh a direct GitHub Pages route | SPA route is restored through the 404 redirect script | Pending final manual browser refresh check |
+| 16 | Refresh a direct GitHub Pages route | SPA route is restored through the 404 redirect script | **Passed** — `/ecommerce-api/products` was refreshed manually with Ctrl+F5 and returned the Products page instead of a 404 |
 
 ## Automated / Browser Verification Completed
 
@@ -31,6 +31,7 @@ This file tracks the Task 4 acceptance checks. The production bundle was built i
 - Customer demo login routed to `/profile` and displayed 5 demo orders.
 - Admin demo login routed to `/admin` and displayed dashboard statistics.
 - GitHub Pages deployment completed after allowing `task4-react-ui` in the `github-pages` environment.
+- Direct-route refresh on `/ecommerce-api/products` was manually confirmed after deployment.
 
 ## Static Checks Completed
 
@@ -46,7 +47,4 @@ This file tracks the Task 4 acceptance checks. The production bundle was built i
 - Mobile screenshot at 390px
 - Short demo video covering navigation, search, filtering, sorting, cart add and quantity update
 - Successful CI and successful GitHub Pages deployment recorded in GitHub Actions
-
-## Remaining Final Manual Check
-
-Open a direct deployed route such as `/ecommerce-api/products`, refresh it in the browser, and confirm that React Router restores the page instead of leaving a GitHub 404 page.
+- Direct-route refresh verification on the deployed site
