@@ -27,3 +27,9 @@ jobs:
         run: npm install
       - name: Build React application
         run: npm run build
+      - name: Upload production build
+        uses: actions/upload-artifact@v4
+        with:
+          name: task4-frontend-dist
+          path: frontend/dist
+          if-no-files-found: error
