@@ -4,7 +4,7 @@ A responsive React + Vite e-commerce frontend created for BATTECHNO Task 4. This
 
 ## Preview
 
-Target GitHub Pages URL after deployment:
+GitHub Pages preview:
 
 `https://qz-jo.github.io/ecommerce-api/`
 
