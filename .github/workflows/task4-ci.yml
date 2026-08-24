@@ -2,7 +2,7 @@ name: Task 4 Frontend CI
 
 on:
   push:
-    branches: [task4-react-ui]
+    branches: [main, task4-react-ui]
     paths:
       - 'frontend/**'
       - '.github/workflows/task4-ci.yml'
