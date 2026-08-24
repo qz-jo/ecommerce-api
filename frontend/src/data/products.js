@@ -1,3 +1,5 @@
+const productImage = (id) => `${import.meta.env.BASE_URL}images/products/product-${id}.svg`
+
 export const products = [
 
 {
@@ -7,7 +9,7 @@ export const products = [
   price: 899,
   stockQuantity: 14,
   category: 'Laptops',
-  image: '/images/products/product-1.svg',
+  image: productImage(1),
   isFeatured: true,
   isActive: true,
   createdAt: '2026-08-02'
@@ -20,7 +22,7 @@ export const products = [
   price: 1299,
   stockQuantity: 6,
   category: 'Laptops',
-  image: '/images/products/product-2.svg',
+  image: productImage(2),
   isFeatured: true,
   isActive: true,
   createdAt: '2026-08-03'
@@ -33,7 +35,7 @@ export const products = [
   price: 699,
   stockQuantity: 9,
   category: 'Laptops',
-  image: '/images/products/product-3.svg',
+  image: productImage(3),
   isFeatured: false,
   isActive: true,
   createdAt: '2026-08-04'
@@ -46,7 +48,7 @@ export const products = [
   price: 1499,
   stockQuantity: 3,
   category: 'Laptops',
-  image: '/images/products/product-4.svg',
+  image: productImage(4),
   isFeatured: true,
   isActive: true,
   createdAt: '2026-08-05'
@@ -59,7 +61,7 @@ export const products = [
   price: 749,
   stockQuantity: 18,
   category: 'Phones',
-  image: '/images/products/product-5.svg',
+  image: productImage(5),
   isFeatured: true,
   isActive: true,
   createdAt: '2026-08-06'
@@ -72,7 +74,7 @@ export const products = [
   price: 499,
   stockQuantity: 0,
   category: 'Phones',
-  image: '/images/products/product-6.svg',
+  image: productImage(6),
   isFeatured: false,
   isActive: true,
   createdAt: '2026-08-07'
@@ -85,7 +87,7 @@ export const products = [
   price: 599,
   stockQuantity: 11,
   category: 'Phones',
-  image: '/images/products/product-7.svg',
+  image: productImage(7),
   isFeatured: false,
   isActive: true,
   createdAt: '2026-08-08'
@@ -98,7 +100,7 @@ export const products = [
   price: 1199,
   stockQuantity: 4,
   category: 'Phones',
-  image: '/images/products/product-8.svg',
+  image: productImage(8),
   isFeatured: true,
   isActive: true,
   createdAt: '2026-08-09'
@@ -111,7 +113,7 @@ export const products = [
   price: 179,
   stockQuantity: 24,
   category: 'Audio',
-  image: '/images/products/product-9.svg',
+  image: productImage(9),
   isFeatured: true,
   isActive: true,
   createdAt: '2026-08-10'
@@ -124,7 +126,7 @@ export const products = [
   price: 129,
   stockQuantity: 30,
   category: 'Audio',
-  image: '/images/products/product-10.svg',
+  image: productImage(10),
   isFeatured: true,
   isActive: true,
   createdAt: '2026-08-11'
@@ -137,7 +139,7 @@ export const products = [
   price: 79,
   stockQuantity: 16,
   category: 'Audio',
-  image: '/images/products/product-11.svg',
+  image: productImage(11),
   isFeatured: false,
   isActive: true,
   createdAt: '2026-08-12'
@@ -150,7 +152,7 @@ export const products = [
   price: 109,
   stockQuantity: 7,
   category: 'Audio',
-  image: '/images/products/product-12.svg',
+  image: productImage(12),
   isFeatured: false,
   isActive: true,
   createdAt: '2026-08-13'
@@ -163,7 +165,7 @@ export const products = [
   price: 99,
   stockQuantity: 20,
   category: 'Accessories',
-  image: '/images/products/product-13.svg',
+  image: productImage(13),
   isFeatured: true,
   isActive: true,
   createdAt: '2026-08-14'
@@ -176,7 +178,7 @@ export const products = [
   price: 59,
   stockQuantity: 25,
   category: 'Accessories',
-  image: '/images/products/product-14.svg',
+  image: productImage(14),
   isFeatured: false,
   isActive: true,
   createdAt: '2026-08-15'
@@ -189,7 +191,7 @@ export const products = [
   price: 89,
   stockQuantity: 0,
   category: 'Accessories',
-  image: '/images/products/product-15.svg',
+  image: productImage(15),
   isFeatured: false,
   isActive: true,
   createdAt: '2026-08-16'
@@ -202,7 +204,7 @@ export const products = [
   price: 69,
   stockQuantity: 32,
   category: 'Accessories',
-  image: '/images/products/product-16.svg',
+  image: productImage(16),
   isFeatured: false,
   isActive: true,
   createdAt: '2026-08-17'
@@ -215,7 +217,7 @@ export const products = [
   price: 74,
   stockQuantity: 15,
   category: 'Gaming',
-  image: '/images/products/product-17.svg',
+  image: productImage(17),
   isFeatured: true,
   isActive: true,
   createdAt: '2026-08-18'
@@ -228,7 +230,7 @@ export const products = [
   price: 249,
   stockQuantity: 8,
   category: 'Gaming',
-  image: '/images/products/product-18.svg',
+  image: productImage(18),
   isFeatured: true,
   isActive: true,
   createdAt: '2026-08-19'
@@ -241,7 +243,7 @@ export const products = [
   price: 39,
   stockQuantity: 22,
   category: 'Gaming',
-  image: '/images/products/product-19.svg',
+  image: productImage(19),
   isFeatured: false,
   isActive: true,
   createdAt: '2026-08-20'
@@ -254,7 +256,7 @@ export const products = [
   price: 119,
   stockQuantity: 5,
   category: 'Gaming',
-  image: '/images/products/product-20.svg',
+  image: productImage(20),
   isFeatured: false,
   isActive: true,
   createdAt: '2026-08-01'
