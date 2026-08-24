@@ -1,0 +1,35 @@
+name: Task 4 Frontend CI
+
+on:
+  push:
+    branches: [main, task4-react-ui]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/task4-ci.yml'
+  pull_request:
+    paths:
+      - 'frontend/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm install
+      - name: Build React application
+        run: npm run build
+      - name: Upload production build
+        uses: actions/upload-artifact@v4
+        with:
+          name: task4-frontend-dist
+          path: frontend/dist
+          if-no-files-found: error
